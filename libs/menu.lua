@@ -43,12 +43,19 @@ local function Execute_TextInput(instance)
 	instance.arg1(input)
 end
 
+local function Execute_Informations(instance)
+	io.write(instance.arg1)
+	io.write("\n > ")
+	local _ = io.read()
+end
+
 function Menu:execute()
 	clear()
 	io.write(self.title .. "\n\n")
 
 	if self.type == "choices" then Execute_Choices(self)
-	elseif self.type == "textinput" then Execute_TextInput(self) end
+	elseif self.type == "textinput" then Execute_TextInput(self)
+	elseif self.type == "infos" then Execute_Informations(self) end
 end
 
 function Menu:update(title, arg1, arg2)

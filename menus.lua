@@ -1,6 +1,8 @@
 local Menu = require("libs.menu")
-local Data = require("data")
 local json = require("libs.json")
+
+local Data = require("data")
+local Requests = require("requests")
 
 local title = [[
   _                   _ 
@@ -27,6 +29,36 @@ local function dump(o)
        return tostring(o)
     end
 end
+
+local colors = {
+	WHITE = "\27[0;38;5;15m",
+	GET = "\27[1;38;5;10m",
+	POST = "\27[1;38;5;11m",
+	PUT = "\27[1;38;5;14m",
+	PATCH = "\27[1;38;5;12m",
+	DELETE = "\27[1;38;5;9m",
+	HEAD = "\27[1;38;5;2m",
+	OPTIONS = "\27[1;38;5;13m",
+}
+
+local color_by_code = {
+	[200] = "\27[1;38;5;10m",
+	[300] = "\27[1;38;5;11m",
+	[301] = "\27[1;38;5;11m",
+	[302] = "\27[1;38;5;11m",
+	[303] = "\27[1;38;5;11m",
+	[304] = "\27[1;38;5;11m",
+	[305] = "\27[1;38;5;11m",
+	[306] = "\27[1;38;5;11m",
+	[307] = "\27[1;38;5;11m",
+	[308] = "\27[1;38;5;11m",
+	[400] = "\27[1;38;5;9m",
+	[401] = "\27[1;38;5;9m",
+	[402] = "\27[1;38;5;9m",
+	[403] = "\27[1;38;5;9m",
+	[404] = "\27[1;38;5;9m",
+	[500] = "\27[1;38;5;9m"
+}
 
 Menus.HOME = function()
     local menu = Menu:new("choices", title .. "A cURL app to view HTTP requests",
@@ -56,7 +88,7 @@ Menus.SNIPPETS = function ()
             table.insert(snippets, 2, "➕ Create a snippet")
 
             for _, snippet in ipairs(datas.snippets) do
-                table.insert(snippets, snippet.title)
+                table.insert(snippets, colors[snippet.verb] .. snippet.verb .. " " .. colors.WHITE .. snippet.title)
             end
 
             return snippets
@@ -88,7 +120,7 @@ end
 Menus.SNIPPET_CREATE = function()
     local menu = Menu:new("textinput", title .. "Create a snippet",
         function(input)
-            local data = {title = input, verb = "GET"}
+            local data = {title = input, url = input, verb = "GET"}
             Data.append(data)
             Menus.SNIPPETS()
         end
@@ -97,11 +129,13 @@ Menus.SNIPPET_CREATE = function()
 end
 
 Menus.SNIPPET_VIEW = function()
-    local menu = Menu:new("choices", title .. "Snippet: " .. SELECTED_SNIPPET.title .. "\nVerb: " .. SELECTED_SNIPPET.verb,
+    local menu = Menu:new("choices", title .. "Snippet: " .. SELECTED_SNIPPET.title .. "\nURL: " .. SELECTED_SNIPPET.url .. "\nVerb: " .. colors[SELECTED_SNIPPET.verb] .. SELECTED_SNIPPET.verb .. colors.WHITE,
         {
             "🔙 Back to snippets",
             "🚀 Execute",
-            "📝 Edit",
+            "📝 Edit title",
+			"📝 Edit URL",
+            "📝 Edit verb",
             "🚮 Delete"
         },
         {
@@ -109,10 +143,16 @@ Menus.SNIPPET_VIEW = function()
                 Menus.SNIPPETS()
             end,
             function()
-
+				Menus.SNIPPET_EXECUTE()
             end,
+			function ()
+                Menus.SNIPPET_EDIT_TITLE()
+			end,
+			function ()
+                Menus.SNIPPET_EDIT_URL()
+			end,
             function ()
-                Menus.SNIPPET_EDIT()
+                Menus.SNIPPET_EDIT_VERB()
             end,
             function()
                 local datas = Data.read()
@@ -131,16 +171,56 @@ Menus.SNIPPET_VIEW = function()
     menu:execute()
 end
 
-Menus.SNIPPET_EDIT = function()
+Menus.SNIPPET_EDIT_TITLE = function ()
+	local menu = Menu:new("textinput", title .. "Set title for " .. SELECTED_SNIPPET.title,
+		function(input)
+			local datas = Data.read()
+
+			for i = #datas.snippets, 1, -1 do
+				if json.encode(datas.snippets[i]) == json.encode(SELECTED_SNIPPET) then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
+					datas.snippets[i].title = input
+					SELECTED_SNIPPET = datas.snippets[i]
+					Data.write(datas)
+				end
+			end
+
+			Menus.SNIPPET_VIEW()
+		end
+
+	)
+	menu:execute()
+end
+
+Menus.SNIPPET_EDIT_URL = function ()
+	local menu = Menu:new("textinput", title .. "Edit URL of " .. SELECTED_SNIPPET.title,
+		function(input)
+			local datas = Data.read()
+
+			for i = #datas.snippets, 1, -1 do
+				if json.encode(datas.snippets[i]) == json.encode(SELECTED_SNIPPET) then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
+					datas.snippets[i].url = input
+					SELECTED_SNIPPET = datas.snippets[i]
+					Data.write(datas)
+				end
+			end
+
+			Menus.SNIPPET_VIEW()
+		end
+	)
+
+	menu:execute()
+end
+
+Menus.SNIPPET_EDIT_VERB = function()
     local menu = Menu:new("choices", title .. "Choose a HTTP verb for " .. SELECTED_SNIPPET.title,
         {
-            "🔍 GET",
-            "✍️ POST",
-            "🔄 PUT",
-            "🗑️ DELETE",
-            "🛠️ PATCH",
-            "⚙️ OPTIONS",
-            "🧑‍💻 HEAD"
+            colors.GET .. "GET" .. colors.WHITE,
+            colors.POST .. "POST" .. colors.WHITE,
+            colors.PUT .. "PUT" .. colors.WHITE,
+            colors.DELETE .. "DELETE" .. colors.WHITE,
+            colors.PATCH .. "PATCH" .. colors.WHITE,
+            colors.OPTIONS .. "OPTIONS" .. colors.WHITE,
+            colors.HEAD .. "HEAD" .. colors.WHITE
         },
         { -- I obviously have to clean this, but tomorrow
             function()
@@ -237,6 +317,20 @@ Menus.SNIPPET_EDIT = function()
         }
     )
     menu:execute()
+end
+
+Menus.SNIPPET_EXECUTE = function()
+	local menu = Menu:new("infos", title .. colors[SELECTED_SNIPPET.verb] .. SELECTED_SNIPPET.verb .. colors.WHITE .. " request at " .. SELECTED_SNIPPET.url,
+		(function()
+			local code, body = Requests[SELECTED_SNIPPET.verb](SELECTED_SNIPPET.url)
+
+			local color = color_by_code[code]
+
+			return "Code: " .. color .. code .. colors.WHITE .. "\n\nBody: " .. body
+		end)()
+	)
+	menu:execute()
+	Menus.SNIPPET_VIEW()
 end
 
 return Menus
