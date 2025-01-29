@@ -40,11 +40,11 @@ function Requests.GET(url)
 end
 
 function Requests.POST(url, data)
-	return perform_request(url, "POST", data, "Content-Type: application/json")
+	return perform_request(url, "POST", data, {"Content-Type: application/json"})
 end
 
 function Requests.PUT(url, data)
-	return perform_request(url, "PUT", data, "Content-Type: application/json")
+	return perform_request(url, "PUT", data, {"Content-Type: application/json"})
 end
 
 function Requests.DELETE(url)
@@ -52,7 +52,7 @@ function Requests.DELETE(url)
 end
 
 function Requests.PATCH(url)
-	return perform_request(url, "PATCH", '{"status": "active"}', "Content-Type: application/json")
+	return perform_request(url, "PATCH", '{"status": "active"}', {"Content-Type: application/json"})
 end
 
 function Requests.OPTIONS(url)

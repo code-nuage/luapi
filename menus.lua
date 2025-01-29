@@ -120,7 +120,7 @@ end
 Menus.SNIPPET_CREATE = function()
     local menu = Menu:new("textinput", title .. "Create a snippet",
         function(input)
-            local data = {title = input, url = input, verb = "GET"}
+            local data = {title = input, url = input, verb = "GET", payload = ""}
             Data.append(data)
             Menus.SNIPPETS()
         end
@@ -136,6 +136,7 @@ Menus.SNIPPET_VIEW = function()
             "📝 Edit title",
 			"📝 Edit URL",
             "📝 Edit verb",
+            "📝 Edit payload",
             "🚮 Delete"
         },
         {
@@ -154,11 +155,14 @@ Menus.SNIPPET_VIEW = function()
             function ()
                 Menus.SNIPPET_EDIT_VERB()
             end,
+            function ()
+                Menus.SNIPPET_EDIT_PAYLOAD()
+            end,
             function()
                 local datas = Data.read()
 
                 for i = #datas.snippets, 1, -1 do
-                    if json.encode(datas.snippets[i]) == json.encode(SELECTED_SNIPPET) then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
+                    if datas.snippets[i].title == SELECTED_SNIPPET.title then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
                         table.remove(datas.snippets, i)
                     end
                 end
@@ -177,7 +181,7 @@ Menus.SNIPPET_EDIT_TITLE = function ()
 			local datas = Data.read()
 
 			for i = #datas.snippets, 1, -1 do
-				if json.encode(datas.snippets[i]) == json.encode(SELECTED_SNIPPET) then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
+				if datas.snippets[i].title == SELECTED_SNIPPET.title then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
 					datas.snippets[i].title = input
 					SELECTED_SNIPPET = datas.snippets[i]
 					Data.write(datas)
@@ -197,7 +201,7 @@ Menus.SNIPPET_EDIT_URL = function ()
 			local datas = Data.read()
 
 			for i = #datas.snippets, 1, -1 do
-				if json.encode(datas.snippets[i]) == json.encode(SELECTED_SNIPPET) then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
+				if datas.snippets[i].title == SELECTED_SNIPPET.title then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
 					datas.snippets[i].url = input
 					SELECTED_SNIPPET = datas.snippets[i]
 					Data.write(datas)
@@ -208,6 +212,26 @@ Menus.SNIPPET_EDIT_URL = function ()
 		end
 	)
 
+	menu:execute()
+end
+
+Menus.SNIPPET_EDIT_PAYLOAD = function ()
+	local menu = Menu:new("textinput", title .. "Set the HTTP payload",
+		function(input)
+			local datas = Data.read()
+
+			for i = #datas.snippets, 1, -1 do
+				if datas.snippets[i].title == SELECTED_SNIPPET.title then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
+					datas.snippets[i].payload = input
+					SELECTED_SNIPPET = datas.snippets[i]
+					Data.write(datas)
+				end
+			end
+
+			Menus.SNIPPET_VIEW()
+		end
+	)
+	
 	menu:execute()
 end
 
@@ -227,7 +251,7 @@ Menus.SNIPPET_EDIT_VERB = function()
                 local datas = Data.read()
 
                 for i = #datas.snippets, 1, -1 do
-                    if json.encode(datas.snippets[i]) == json.encode(SELECTED_SNIPPET) then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
+                    if datas.snippets[i].title == SELECTED_SNIPPET.title then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
                         datas.snippets[i].verb = "GET"
                         SELECTED_SNIPPET = datas.snippets[i]
                         Data.write(datas)
@@ -240,7 +264,7 @@ Menus.SNIPPET_EDIT_VERB = function()
                 local datas = Data.read()
 
                 for i = #datas.snippets, 1, -1 do
-                    if json.encode(datas.snippets[i]) == json.encode(SELECTED_SNIPPET) then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
+                    if datas.snippets[i].title == SELECTED_SNIPPET.title then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
                         datas.snippets[i].verb = "POST"
                         SELECTED_SNIPPET = datas.snippets[i]
                         Data.write(datas)
@@ -253,7 +277,7 @@ Menus.SNIPPET_EDIT_VERB = function()
                 local datas = Data.read()
 
                 for i = #datas.snippets, 1, -1 do
-                    if json.encode(datas.snippets[i]) == json.encode(SELECTED_SNIPPET) then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
+                    if datas.snippets[i].title == SELECTED_SNIPPET.title then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
                         datas.snippets[i].verb = "PUT"
                         SELECTED_SNIPPET = datas.snippets[i]
                         Data.write(datas)
@@ -266,7 +290,7 @@ Menus.SNIPPET_EDIT_VERB = function()
                 local datas = Data.read()
 
                 for i = #datas.snippets, 1, -1 do
-                    if json.encode(datas.snippets[i]) == json.encode(SELECTED_SNIPPET) then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
+                    if datas.snippets[i].title == SELECTED_SNIPPET.title then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
                         datas.snippets[i].verb = "DELETE"
                         SELECTED_SNIPPET = datas.snippets[i]
                         Data.write(datas)
@@ -279,7 +303,7 @@ Menus.SNIPPET_EDIT_VERB = function()
                 local datas = Data.read()
 
                 for i = #datas.snippets, 1, -1 do
-                    if json.encode(datas.snippets[i]) == json.encode(SELECTED_SNIPPET) then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
+                    if datas.snippets[i].title == SELECTED_SNIPPET.title then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
                         datas.snippets[i].verb = "PATCH"
                         SELECTED_SNIPPET = datas.snippets[i]
                         Data.write(datas)
@@ -292,7 +316,7 @@ Menus.SNIPPET_EDIT_VERB = function()
                 local datas = Data.read()
 
                 for i = #datas.snippets, 1, -1 do
-                    if json.encode(datas.snippets[i]) == json.encode(SELECTED_SNIPPET) then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
+                    if datas.snippets[i].title == SELECTED_SNIPPET.title then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
                         datas.snippets[i].verb = "OPTIONS"
                         SELECTED_SNIPPET = datas.snippets[i]
                         Data.write(datas)
@@ -305,7 +329,7 @@ Menus.SNIPPET_EDIT_VERB = function()
                 local datas = Data.read()
 
                 for i = #datas.snippets, 1, -1 do
-                    if json.encode(datas.snippets[i]) == json.encode(SELECTED_SNIPPET) then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
+                    if datas.snippets[i].title == SELECTED_SNIPPET.title then -- I have to compare the json value of the snippets since they are not located in the same memory block (why ?)
                         datas.snippets[i].verb = "HEAD"
                         SELECTED_SNIPPET = datas.snippets[i]
                         Data.write(datas)
@@ -322,7 +346,12 @@ end
 Menus.SNIPPET_EXECUTE = function()
 	local menu = Menu:new("infos", title .. colors[SELECTED_SNIPPET.verb] .. SELECTED_SNIPPET.verb .. colors.WHITE .. " request at " .. SELECTED_SNIPPET.url,
 		(function()
-			local code, body = Requests[SELECTED_SNIPPET.verb](SELECTED_SNIPPET.url)
+			local code, body
+			if SELECTED_SNIPPET.verb == "POST" or SELECTED_SNIPPET.verb == "PUT" then
+				code, body = Requests[SELECTED_SNIPPET.verb](SELECTED_SNIPPET.url, SELECTED_SNIPPET.payload)
+			else
+				code, body = Requests[SELECTED_SNIPPET.verb](SELECTED_SNIPPET.url)
+			end
 
 			local color = color_by_code[code]
 
