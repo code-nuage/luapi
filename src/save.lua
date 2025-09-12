@@ -1,8 +1,6 @@
 local cjson = require("cjson")
 local lfs = require("lfs")
 
-local colors = require("colors")
-
 local M = {}
 
 function M.mkdir_p(path)

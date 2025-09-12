@@ -12,7 +12,7 @@ dependencies = {
    "lua >= 5.1",
    "lua-cjson >= 0.7.2-1",
    "luafilesystem >= 1.8.0-1",
-   "http >= 0.4-0"
+   "luasec >= 1.3.2-1"
 }
 build = {
    type = "builtin",
@@ -23,6 +23,7 @@ build = {
       menu = "src/menu.lua",
       menus = "src/menus.lua",
       save = "src/save.lua",
+      http = "src/http.lua"
    },
    install = {
       bin = {
