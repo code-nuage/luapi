@@ -10,8 +10,13 @@ function Request.new(method, path, body, headers)
     local i = setmetatable({}, Request)
 
     i.headers = {
-        ["User-Agent"] = "luapi/0.0-1"
+        ["User-Agent"] = "luapi/0.0-1",
+        ["Content-Length"] = body and tostring(#body) or 0
     }
+
+    for k, v in pairs(headers or {}) do
+        i.headers[k] = v
+    end
 
     i:set_method(method or "GET")
         :set_path(path or "/")
@@ -27,7 +32,7 @@ function Request:set_method(method)
 end
 
 function Request:set_path(path)
-    self.method = type(path) == "string" and path or "/"
+    self.path = type(path) == "string" and path or "/"
     return self
 end
 
@@ -80,12 +85,12 @@ Response.__index = Response
 function Response.new(raw)
     local i = setmetatable({}, Response)
 
-    local head, body = raw:match("^(.-\r\n)\r\n(.*)$")
+    local head, body = raw:match("^(.-)\r\n\r\n(.*)$")
     if not head then
         head, body = raw, ""
     end
 
-    local protocol, status_code, status_msg = head:match("^(HTTP/%d%.%d) (%d+) (.-)\r\n")
+    local protocol, status_code, status_msg = head:match("^(HTTP/%d%.%d) (%d+) (.-)\r?\n")
     i.protocol = protocol or ""
     i.status_code = tonumber(status_code) or 0
     i.status_msg = status_msg or ""
@@ -134,33 +139,51 @@ local function parse_url(url)
 end
 
 function M.perform(url, method, body, headers)
-    local scheme, host, path, port = parse_url(url)
-    local s, err = socket.tcp()
-    if not s then return nil, err end
+    local scheme, host, port, path = parse_url(url)
 
+    if scheme ~= "http" then
+        return
+    end
+
+    local s, err = socket.tcp()
+    if not s then return end
     s:settimeout(5)
 
-    print(host, port)
-
     local ok, err = s:connect(host, port)
-    if not ok then s:close(); return nil, err end
+    if not ok then
+        s:close(); return
+    end
 
-    local req = Request.new(method, path, body, headers):add_header("Host", host):build()
+    local req = Request.new(method, path, body, headers)
+        :add_header("Host", host)
+        :build()
 
     s:send(req)
 
-    local response, chunk = {}, nil
+    local header_data = {}
     while true do
-        chunk, err = s:receive(1024)
-        if chunk and #chunk > 0 then
-        table.insert(response, chunk)
-        else
-        break
-        end
+        local line, err = s:receive("*l")
+        if not line then return end
+        if line == "" then break end
+        table.insert(header_data, line)
     end
 
+    local received_headers = table.concat(header_data, "\r\n")
+    local content_length = received_headers:match("Content%-Length:%s*(%d+)")
+    content_length = tonumber(content_length or 0)
+
+    local received_body = ""
+    if content_length > 0 then
+        received_body, err = s:receive(content_length)
+        if not received_body then return end
+    end
+
+    local raw = table.concat({ table.concat(header_data, "\r\n"), "", received_body }, "\r\n")
+
     s:close()
-    return table.concat(response)
+
+    local res = Response.new(raw)
+    return res:get_status_code(), res:get_headers(), res:get_body()
 end
 
 return M

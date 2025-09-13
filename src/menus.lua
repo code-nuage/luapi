@@ -157,7 +157,8 @@ menus.SNIPPET_VIEW = function(id)
         title ..
         "\nSnippet: " .. snippet.name ..
         "\nURL: " .. colors.colorize(snippet.url, colors.UNDERLINE) ..
-        "\nMethod: " .. colors.colorize(" " .. snippet.verb .. " ", verbs_colors[snippet.verb] or colors.ITALIC, colors.BOLD),
+        "\nMethod: " ..
+        colors.colorize(" " .. snippet.verb .. " ", verbs_colors[snippet.verb] or colors.ITALIC, colors.BOLD),
         {
             colors.colorize("Execute", colors.BLUE),
             colors.colorize("Rename", colors.CYAN),
@@ -169,11 +170,19 @@ menus.SNIPPET_VIEW = function(id)
         {
             function()
                 -- REQUEST
-                local body, code, headers, status = http.perform(snippet.url)
+                local status, headers, body = http.perform(snippet.url, snippet.verb, snippet.payload, {})
+
+                local returned_headers = ""
+
+                if headers then
+                    for k, v in pairs(headers) do
+                        returned_headers = returned_headers .. k .. ": " .. v .. "\r\n"
+                    end
+                end
 
                 -- RESPONSE
                 local res = {
-                    headers = headers,
+                    headers = returned_headers or "",
                     body = (not body or #body > 0) and body or colors.colorize("No body", colors.RED),
                     status = status or colors.colorize("No status", colors.RED)
                 }
@@ -210,9 +219,11 @@ menus.SNIPPET_RESPONSE = function(id, res)
         title ..
         "\nSnippet: " .. snippet.name ..
         "\nURL: " .. colors.colorize(snippet.url, colors.UNDERLINE) ..
-        "\nMethod: " .. colors.colorize(" " .. snippet.verb .. " ", verbs_colors[snippet.verb] or colors.ITALIC, colors.BOLD),
-        "\nPayload: " .. res.body ..
-        "\nStatus: " .. res.status
+        "\nMethod: " ..
+        colors.colorize(" " .. snippet.verb .. " ", verbs_colors[snippet.verb] or colors.ITALIC, colors.BOLD),
+        colors.colorize("\nPayload: ", colors.BOLD) .. res.body ..
+        colors.colorize("\nHeaders: ", colors.BOLD) .. res.headers ..
+        colors.colorize("\nStatus: ", colors.BOLD) .. res.status
     ):execute()
     menus.SNIPPET_VIEW(snippet.id)
 end
@@ -228,7 +239,8 @@ menus.SNIPPET_EDIT = function(id, key)
         title ..
         "\nSnippet: " .. snippet.name ..
         "\nURL: " .. colors.colorize(snippet.url, colors.UNDERLINE) ..
-        "\nMethod: " .. colors.colorize(" " .. snippet.verb .. " ", verbs_colors[snippet.verb] or colors.ITALIC, colors.BOLD),
+        "\nMethod: " ..
+        colors.colorize(" " .. snippet.verb .. " ", verbs_colors[snippet.verb] or colors.ITALIC, colors.BOLD),
         function(input)
             local ok, data = save.load(config.save_path .. "/save.json")
 
